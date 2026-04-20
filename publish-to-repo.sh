@@ -42,9 +42,6 @@ gitCommitMessage=$(yq e '."git_commit_message"' "$configFilePath")
 
 fullCommitMessage="$gitCommitMessage | ${GITHUB_SHA:0:7} | $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
-git config user.email "$gitCommitEmail"
-git config user.name "$gitCommitUser"
-
 # Check if .files array is empty or missing
 files_count=$(yq e '.files | length' "$configFilePath")
 if [[ -z "$files_count" || "$files_count" -eq 0 ]]; then
@@ -88,6 +85,8 @@ yq -r '.files[] | "\(.source) \(.target)"' "$configFilePath" | while read -r sou
 		exit 1
 	fi
 done
+git config user.email "$gitCommitEmail"
+git config user.name "$gitCommitUser"
 
 git add --all
 git status
