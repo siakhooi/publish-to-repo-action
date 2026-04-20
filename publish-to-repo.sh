@@ -68,7 +68,7 @@ yq -r '.files[] | "\(.source) \(.target)"' "$configFilePath" | while read -r sou
 	srcPath=$(realpath "${GITHUB_WORKSPACE}/$sourcePath")
 
 	# target path always relative to repo root, /* means relative to repo root
-	tgtPath=$(realpath "$PWD/$targetPath")
+	tgtPath=$(realpath -m "$PWD/$targetPath")
 
 	echo "Source: $srcPath"
 	echo "Target: $tgtPath"
