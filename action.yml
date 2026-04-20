@@ -18,6 +18,7 @@ runs:
         if ! command -v yq &> /dev/null; then
           echo "yq not found, installing..."
           sudo apt update && sudo apt install -y yq
+        fi
 
     - name: "Run publish script"
       run: bash "$GITHUB_ACTION_PATH/publish.sh" "${{ inputs.config-file }}" "${{ inputs.token }}"
