@@ -1,0 +1,24 @@
+name: "Publish to Repo Action"
+description: "GitHub Action that publishes artifacts to a repository."
+inputs:
+  config-file:
+    description: "The configuration file for the action."
+    required: false
+    default: "publish-to-repo.yml"
+  token:
+    description: "GitHub token with permissions to publish to the repository."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Install yq"
+      shell: bash
+      run: |
+        if ! command -v yq &> /dev/null; then
+          echo "yq not found, installing..."
+          sudo apt update && sudo apt install -y yq
+
+    - name: "Run publish script"
+      run: bash "$GITHUB_ACTION_PATH/publish.sh" "${{ inputs.config-file }}" "${{ inputs.token }}"
+      shell: bash
