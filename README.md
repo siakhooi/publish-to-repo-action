@@ -34,7 +34,7 @@ jobs:
       - name: Publish Files
         uses: siakhooi/publish-to-repo-action@main
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.MYTOKEN }}
 ```
 ### `publish-to-repo.yml`
 ```
