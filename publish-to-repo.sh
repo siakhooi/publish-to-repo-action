@@ -75,9 +75,8 @@ yq -r '.files[] | "\(.source) \(.target)"' "$configFilePath" | while read -r sou
 
 	if [[ -f "$srcPath" ]]; then
 		mkdir -p "$(dirname "$tgtPath")"
-		finalTargetPath="$tgtPath/$(basename "$srcPath")"
-		echo "Source is a file, copying to $finalTargetPath"
-		cp -v "$srcPath" "$finalTargetPath"
+		echo "Source is a file, copying to $tgtPath"
+		cp -v "$srcPath" "$tgtPath"
 
 	elif [[ -d "$srcPath" ]]; then
 		echo "Source is a directory, copying contents"
