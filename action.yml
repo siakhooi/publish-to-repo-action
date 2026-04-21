@@ -1,5 +1,11 @@
 name: "Publish to Repo Action"
 description: "GitHub Action that publishes artifacts to a repository."
+author: siakhooi
+
+branding:
+  icon: "upload-cloud"
+  color: "blue"
+
 inputs:
   config-file:
     description: "The configuration file for the action."
