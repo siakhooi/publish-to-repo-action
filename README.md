@@ -48,6 +48,11 @@ files:
   - source: /path/in/source
     target: path/in/target
 ```
+
+## Deliverables
+
+- https://github.com/marketplace/actions/publish-to-repo-action
+
 ## Badges
 ![GitHub](https://img.shields.io/github/license/siakhooi/publish-to-repo-action?logo=github)
 ![GitHub last commit](https://img.shields.io/github/last-commit/siakhooi/publish-to-repo-action?logo=github)
