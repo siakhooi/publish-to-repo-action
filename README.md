@@ -59,6 +59,14 @@ files:
 | `token`       | GitHub token with `contents:write` permission for the target repository | **Yes**  | -                     |
 | `config-file` | Path to the configuration YAML file                                     | No       | `publish-to-repo.yml` |
 
+## 📤 Outputs
+
+| Output                | Description                                           |
+| --------------------- | ----------------------------------------------------- |
+| `commit_sha`          | The SHA of the commit that was pushed.                |
+| `committed`           | Indicates whether a commit was made (`true`/`false`). |
+| `changed_files_count` | Number of files that were changed in the commit.      |
+
 ## 🔧 Configuration Schema
 
 The configuration file (`publish-to-repo.yml`) supports the following fields:
