@@ -15,6 +15,17 @@ inputs:
     description: "GitHub token with permissions to publish to the repository."
     required: true
 
+outputs:
+  commit_sha:
+    description: "The SHA of the commit that was pushed."
+    value: ${{ steps.publish.outputs.commit_sha }}
+  committed:
+    description: "Indicates whether a commit was made."
+    value: ${{ steps.publish.outputs.committed }}
+  changed_files_count:
+    description: "Number of files that were changed in the commit."
+    value: ${{ steps.publish.outputs.changed_files_count }}
+
 runs:
   using: "composite"
   steps:
@@ -27,5 +38,6 @@ runs:
         fi
 
     - name: "Run publish script"
+      id: publish
       run: bash "$GITHUB_ACTION_PATH/publish-to-repo.sh" "${{ inputs.config-file }}" "${{ inputs.token }}"
       shell: bash

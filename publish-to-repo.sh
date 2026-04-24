@@ -18,6 +18,10 @@ if [[ -z "$GITHUB_WORKSPACE" ]]; then
 	echo "GITHUB_WORKSPACE is not set"
 	exit 1
 fi
+if [[ -z "$GITHUB_OUTPUT" ]]; then
+	echo "GITHUB_OUTPUT is not set"
+	exit 1
+fi
 if command -v git &>/dev/null; then
 	echo "Git is installed"
 else
@@ -92,8 +96,24 @@ git add --all
 git status
 if git diff --cached --quiet; then
 	echo "No changes to commit"
+	{
+		echo "committed=false"
+		echo "changed_files_count=0"
+	} >>"$GITHUB_OUTPUT"
 	exit 1
 fi
+changed_files_count=$(git diff --cached --name-only | wc -l)
+
 git remote set-url origin "$repoUrl"
 git commit -m "$fullCommitMessage"
 git push origin "$repoBranch"
+
+echo "Committed changes to $repoBranch branch of $repo repository. Changed files: $changed_files_count"
+
+COMMIT_SHA=$(git rev-parse HEAD)
+
+{
+	echo "commit_sha=$COMMIT_SHA"
+	echo "committed=true"
+	echo "changed_files_count=$changed_files_count"
+} >>"$GITHUB_OUTPUT"
