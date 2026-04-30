@@ -62,33 +62,37 @@ cd "$workingDirectory" || {
 	exit 1
 }
 
-yq -r '.files[] | "\(.source) \(.target)"' "$configFilePath" | while read -r sourcePath targetPath; do
+while read -r sourcePath targetPath; do
 	echo "Source: $sourcePath, Target: $targetPath"
 
-	# source path always relative to $GITHUB_WORKSPACE, /* means relative to $GITHUB_WORKSPACE
-	srcPath=$(realpath "${GITHUB_WORKSPACE}/$sourcePath")
-
-	# target path always relative to repo root, /* means relative to repo root
-	tgtPath=$(realpath -m "$PWD/$targetPath")
-
-	echo "Source: $srcPath"
-	echo "Target: $tgtPath"
-
-	if [[ -f "$srcPath" ]]; then
-		mkdir -p "$(dirname "$tgtPath")"
-		echo "Source is a file, copying to $tgtPath"
-		cp -v "$srcPath" "$tgtPath"
-
-	elif [[ -d "$srcPath" ]]; then
-		echo "Source is a directory, copying contents"
-		mkdir -p "$tgtPath"
-		cp -rv "$srcPath/." "$tgtPath/"
-
-	else
-		echo "Source path does not exist: $srcPath"
-		exit 1
+	shopt -s nullglob
+	# shellcheck disable=SC2206
+	matches=("$GITHUB_WORKSPACE"/$sourcePath)
+	shopt -u nullglob
+	if [[ ${#matches[@]} -eq 0 ]]; then
+		echo "No files matched the pattern: $sourcePath"
+		continue
 	fi
-done
+
+	if [[ ${#matches[@]} -gt 1 ]]; then
+		if [[ ! "$targetPath" == */ ]]; then
+			echo "Multiple files matched the pattern: $sourcePath, but target path does not end with /"
+			exit 1
+		fi
+	fi
+
+	tgtPath=$(realpath -m "$PWD/$targetPath")
+	if [[ "$targetPath" == */ ]]; then
+		mkdir -p "$tgtPath"
+		for src in "${matches[@]}"; do
+			echo "Copying $src to $tgtPath"
+			cp -v "$src" "$tgtPath"
+		done
+	else
+		mkdir -p "$(dirname "$tgtPath")"
+		cp -v "${matches[@]}" "$tgtPath"
+	fi
+done < <(yq -r '.files[] | "\(.source) \(.target)"' "$configFilePath")
 git config user.email "$gitCommitEmail"
 git config user.name "$gitCommitUser"
 
