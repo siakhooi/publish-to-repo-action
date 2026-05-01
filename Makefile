@@ -1,8 +1,9 @@
 
 info:
 release:
-	gh release create v0.3.0 --latest -t v0.3.0 -n "Release v0.3.0 - add outputs"
+	gh release create v0.4.0 --latest -t v0.4.0 -n "Release v0.4.0 - wildcards in source"
 	git tag -d v0
 	git push origin --delete v0
-	git tag v0 7867fe0
+	git tag v0 6ce345a
 	git push origin --tags
+	git pull
