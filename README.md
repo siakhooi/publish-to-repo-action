@@ -103,7 +103,7 @@ Examples:
 
 **Spaces in paths:** glob patterns or paths containing spaces are not reliably supported.
 
-**Directories:** each copy uses `cp` without recursive directory semantics. Prefer globs that match the **files** you need (for example under `dist/`) rather than relying on copying a whole directory tree in one mapping.
+**Directories:** Directory copying is supported. If the source is a directory, it will be copied recursively to the target location. You can now map entire directory trees if needed.
 
 ## Authentication
 
