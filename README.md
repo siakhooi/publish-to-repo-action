@@ -4,15 +4,15 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/siakhooi/publish-to-repo-action?logo=github)
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/siakhooi/publish-to-repo-action?logo=github)
 
-A GitHub Action that publishes files and directories from your workflow to another GitHub repository. Useful for deploying build artifacts, documentation, or generated files to a separate target repo.
+A GitHub Action that copies files from your workflow workspace into another GitHub repository, then commits and pushes. Typical uses include deploying build artifacts, generated docs, or other outputs to a dedicated repo.
 
-## 📦 Installation
+## Installation
 
 This action is available on the [GitHub Marketplace](https://github.com/marketplace/actions/publish-to-repo-action).
 
-## 🚀 Quick Start
+## Quick start
 
-### 1. Configure the Workflow
+### 1. Configure the workflow
 
 Create `.github/workflows/publish.yml`:
 
@@ -28,15 +28,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Publish to Target Repo
+      - name: Publish to target repo
         uses: siakhooi/publish-to-repo-action@main
         with:
           token: ${{ secrets.PUBLISH_TOKEN }}
 ```
 
-### 2. Create Config File
+### 2. Add the config file
 
-Add `publish-to-repo.yml` to your repository root:
+Add `publish-to-repo.yml` at the repository root (or set `config-file` to another path):
 
 ```yaml
 repo: username/target-repo
@@ -46,85 +46,93 @@ git_commit_email: deploy@example.com
 git_commit_message: "chore: Auto deploy"
 
 files:
-  - source: dist/
+  - source: "dist/*"
     target: public/
   - source: README.md
     target: docs/README.md
+  - source: "build/*.zip"
+    target: releases/
 ```
 
-## 📋 Inputs
+## Inputs
 
 | Input         | Description                                                             | Required | Default               |
 | ------------- | ----------------------------------------------------------------------- | -------- | --------------------- |
-| `token`       | GitHub token with `contents:write` permission for the target repository | **Yes**  | -                     |
-| `config-file` | Path to the configuration YAML file                                     | No       | `publish-to-repo.yml` |
+| `token`       | GitHub token with `contents:write` on the **target** repository         | **Yes**  | —                     |
+| `config-file` | Path to the YAML config file (relative to the repository root)          | No       | `publish-to-repo.yml` |
 
-## 📤 Outputs
+## Outputs
 
-| Output                | Description                                           |
-| --------------------- | ----------------------------------------------------- |
-| `commit_sha`          | The SHA of the commit that was pushed.                |
-| `committed`           | Indicates whether a commit was made (`true`/`false`). |
-| `changed_files_count` | Number of files that were changed in the commit.      |
+| Output                | Description                                              |
+| --------------------- | -------------------------------------------------------- |
+| `commit_sha`          | SHA of the commit that was pushed.                       |
+| `committed`           | Whether a commit was made (`true` / `false`).            |
+| `changed_files_count` | Number of files changed in that commit.                  |
 
-## 🔧 Configuration Schema
+## Configuration schema
 
-The configuration file (`publish-to-repo.yml`) supports the following fields:
+| Field                | Type   | Description                                                                 | Required |
+| -------------------- | ------ | --------------------------------------------------------------------------- | -------- |
+| `repo`               | string | Target repository as `owner/name`                                         | **Yes**  |
+| `branch`             | string | Branch to push to                                                           | **Yes**  |
+| `git_commit_user`    | string | Commit author name                                                          | **Yes**  |
+| `git_commit_email`   | string | Commit author email                                                         | **Yes**  |
+| `git_commit_message` | string | Base message; run metadata is appended automatically                        | **Yes**  |
+| `files`              | array  | List of copy mappings                                                       | **Yes**  |
+| `files[].source`     | string | Source path or glob, relative to [`$GITHUB_WORKSPACE`](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables) | **Yes**  |
+| `files[].target`     | string | Destination path relative to the target repo root (see file mapping below) | **Yes**  |
 
-| Field                | Type   | Description                                              | Required |
-| -------------------- | ------ | -------------------------------------------------------- | -------- |
-| `repo`               | string | Target repository in `owner/repo` format                 | **Yes**  |
-| `branch`             | string | Target branch name                                       | **Yes**  |
-| `git_commit_user`    | string | Git commit author name                                   | **Yes**  |
-| `git_commit_email`   | string | Git commit author email                                  | **Yes**  |
-| `git_commit_message` | string | Base commit message (timestamp and SHA will be appended) | **Yes**  |
-| `files`              | array  | List of file mappings to publish                         | **Yes**  |
-| `files[].source`     | string | Source path (relative to `$GITHUB_WORKSPACE`)            | **Yes**  |
-| `files[].target`     | string | Target path (relative to target repo root)               | **Yes**  |
+## File mapping
 
-### File Mapping Notes
+Paths are interpreted on the Linux runner using bash pathname expansion.
 
-- **Source paths** are resolved relative to the workflow workspace (`$GITHUB_WORKSPACE`)
-- **Target paths** are resolved relative to the target repository root
-- Supports both individual files and directories
-- Directory contents are copied recursively
+- **Source** — Joined with the workspace root. You may use shell globs (`*`, `?`, `[…]`). If nothing matches, that mapping is skipped (with a log line).
+- **Target** — Resolved under the cloned target repo. Whether the destination is treated as a **file** or a **directory** is determined by a **trailing slash**:
+  - Ends with **`/`** — directory. Matching items are copied **into** that directory (created if needed).
+  - Does **not** end with **`/`** — single file path. The parent directory is created; there must be exactly **one** matching source path (otherwise `cp` cannot combine several sources into one file).
 
-## 🔐 Authentication
+**Multiple matches:** if `source` matches **more than one** path, `target` **must** end with `/`. Otherwise the action fails with a clear error.
 
-This action requires a GitHub Personal Access Token (PAT) with the following permissions:
+Examples:
 
-- **`contents:write`** - Required to push files to the target repository
+| Intent | Example `source` | Example `target` |
+| ------ | ---------------- | ---------------- |
+| One file to one file | `README.md` | `docs/README.md` |
+| Many files into a folder | `build/*.js` | `static/js/` |
+| One glob that may yield one or many files | `artifact.tgz` or `dist/*.zip` | Use `out/` if multiple zips are possible |
 
-### Creating a Token
+**Spaces in paths:** glob patterns or paths containing spaces are not reliably supported.
 
-1. Go to **Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)**
-2. Generate a new token with `repo` scope (or `public_repo` for public repos only)
-3. Add the token as a repository secret:
-   - Go to your source repo → **Settings** → **Secrets and variables** → **Actions**
-   - Create a new secret named `PUBLISH_TOKEN` (or any name you prefer)
-   - Paste your PAT as the value
+**Directories:** each copy uses `cp` without recursive directory semantics. Prefer globs that match the **files** you need (for example under `dist/`) rather than relying on copying a whole directory tree in one mapping.
 
-### Using the Token
+## Authentication
 
-Reference the secret in your workflow:
+The token must be allowed to push to the **target** repository (for example a personal access token or a scoped token from the target repo’s settings).
+
+- **`contents:write`** on the target repo is required to push commits.
+
+### Creating a token
+
+1. **Settings** → **Developer settings** → **Personal access tokens** → create a token with access to the target repo (`repo` scope for classic tokens, or fine-grained permissions that include contents write).
+2. Store it as an Actions secret on the **source** repo (for example `PUBLISH_TOKEN`).
+
+### Using the token
 
 ```yaml
 with:
   token: ${{ secrets.PUBLISH_TOKEN }}
 ```
 
-## ⚠️ Current Limitations
+## Limitations
 
-- Target repository must already exist (will not auto-create)
-- Target branch must already exist (will not auto-create)
-- Does not support deleting files from target repository
-- Only supports publishing from Ubuntu/Linux runners
-- Large file transfers may be slow due to shallow clone limitations
-- No support for Git LFS files
+- Target repository and branch must already exist; they are not created for you.
+- Files are only added or updated from your mappings; nothing deletes remote-only files in the target repo.
+- Intended for Linux runners (for example `ubuntu-latest`).
+- Very large trees or huge files may be slow with a shallow clone; Git LFS objects are not handled specially.
 
-## 📄 License
+## License
 
-[MIT License](LICENSE) - Copyright (c) 2026 Siak Hooi
+[MIT License](LICENSE) — Copyright (c) 2026 Siak Hooi
 
 ---
 
