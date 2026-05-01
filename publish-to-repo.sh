@@ -86,7 +86,11 @@ while read -r sourcePath targetPath; do
 		mkdir -p "$tgtPath"
 		for src in "${matches[@]}"; do
 			echo "Copying $src to $tgtPath"
-			cp -v "$src" "$tgtPath"
+			if [[ -d "$src" ]]; then
+				cp -vr "$src" "$tgtPath"
+			else
+				cp -v "$src" "$tgtPath"
+			fi
 		done
 	else
 		mkdir -p "$(dirname "$tgtPath")"
