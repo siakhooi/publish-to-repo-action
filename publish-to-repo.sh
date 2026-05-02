@@ -62,19 +62,36 @@ cd "$workingDirectory" || {
 	exit 1
 }
 
-while read -r sourcePath targetPath; do
+for ((i = 0; i < files_count; i++)); do
+	sourcePath=$(yq e ".files[$i].source" "$configFilePath")
+	targetPath=$(yq e ".files[$i].target" "$configFilePath")
+	items_raw=$(yq e ".files[$i].items" "$configFilePath")
+
 	echo "Source: $sourcePath, Target: $targetPath"
 
 	shopt -s nullglob
 	# shellcheck disable=SC2206
 	matches=("$GITHUB_WORKSPACE"/$sourcePath)
 	shopt -u nullglob
-	if [[ ${#matches[@]} -eq 0 ]]; then
+	match_count=${#matches[@]}
+
+	if [[ "$items_raw" != "null" && -n "$items_raw" ]]; then
+		if ! [[ "$items_raw" =~ ^[0-9]+$ ]]; then
+			echo "Invalid items for files[$i]: expected a non-negative integer, got: $items_raw"
+			exit 1
+		fi
+		if [[ "$match_count" -ne "$items_raw" ]]; then
+			echo "files[$i]: items is $items_raw but source \"$sourcePath\" matched $match_count item(s)"
+			exit 1
+		fi
+	fi
+
+	if [[ $match_count -eq 0 ]]; then
 		echo "No files matched the pattern: $sourcePath"
 		continue
 	fi
 
-	if [[ ${#matches[@]} -gt 1 ]]; then
+	if [[ $match_count -gt 1 ]]; then
 		if [[ ! "$targetPath" == */ ]]; then
 			echo "Multiple files matched the pattern: $sourcePath, but target path does not end with /"
 			exit 1
@@ -96,7 +113,7 @@ while read -r sourcePath targetPath; do
 		mkdir -p "$(dirname "$tgtPath")"
 		cp -v "${matches[@]}" "$tgtPath"
 	fi
-done < <(yq -r '.files[] | "\(.source) \(.target)"' "$configFilePath")
+done
 git config user.email "$gitCommitEmail"
 git config user.name "$gitCommitUser"
 

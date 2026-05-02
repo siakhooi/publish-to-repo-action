@@ -81,17 +81,20 @@ files:
 | `files`              | array  | List of copy mappings                                                       | **Yes**  |
 | `files[].source`     | string | Source path or glob, relative to [`$GITHUB_WORKSPACE`](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables) | **Yes**  |
 | `files[].target`     | string | Destination path relative to the target repo root (see file mapping below) | **Yes**  |
+| `files[].items`      | integer | Expected number of paths matched by `source` after glob expansion (files or directories). If set and the count differs, the action fails. If omitted, no count check is performed. | No       |
 
 ## File mapping
 
 Paths are interpreted on the Linux runner using bash pathname expansion.
 
-- **Source** — Joined with the workspace root. You may use shell globs (`*`, `?`, `[…]`). If nothing matches, that mapping is skipped (with a log line).
+- **Source** — Joined with the workspace root. You may use shell globs (`*`, `?`, `[…]`). If nothing matches, that mapping is skipped (with a log line), except when **`items`** is set: the count must still match `items` (so a non-zero `items` with zero matches fails the job).
 - **Target** — Resolved under the cloned target repo. Whether the destination is treated as a **file** or a **directory** is determined by a **trailing slash**:
   - Ends with **`/`** — directory. Matching items are copied **into** that directory (created if needed).
   - Does **not** end with **`/`** — single file path. The parent directory is created; there must be exactly **one** matching source path (otherwise `cp` cannot combine several sources into one file).
 
 **Multiple matches:** if `source` matches **more than one** path, `target` **must** end with `/`. Otherwise the action fails with a clear error.
+
+**Expected match count (`items`):** optional per mapping. For example `items: 1` requires that `source` expands to exactly one path (file or directory). If the actual count differs, the action prints an error and exits. You can use `items: 0` to require that nothing matches (the mapping is then skipped without error). Omit `items` for no count check.
 
 Examples:
 
